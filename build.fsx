@@ -6,7 +6,7 @@ open System.IO
 // Directories
 let buildDir  = "./build/"
 let deployDir = "./deploy/"
-
+let resourceDir = "./res/"
 
 // Filesets
 let appReferences  =
@@ -22,8 +22,10 @@ Target "Clean" (fun _ ->
 )
 
 Target "Build" (fun _ ->
+    // Because Fake's Copy helpers are dumb
+    File.Copy("res/ilaria.css","build/ilaria.css", true)
+    
     // compile all projects below src/app/
-
     MSBuildDebug buildDir "Build" appReferences
         |> Log "AppBuild-Output: "
 )
@@ -31,7 +33,7 @@ Target "Build" (fun _ ->
 Target "Deploy" (fun _ ->
     !! (buildDir + "/**/*.*")
         -- "*.zip"
-        |> Zip buildDir (deployDir + "ApplicationName." + version + ".zip")
+        |> Zip buildDir (deployDir + "Ilaria." + version + ".zip")
 )
 
 // Build order

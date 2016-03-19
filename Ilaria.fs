@@ -20,7 +20,7 @@ let defaultOptions = {
   Verbose = false
   GenerateToc = false
   DisplayHelp = false
-  CssFile = ""
+  CssFile = "ilaria.css"
 }
 
 let helpText = "
@@ -131,7 +131,8 @@ let main argv =
     else
       match cssWrapper with
         | Some (a, b) ->
-          printfn "%s used for css" (Path.GetFileName cssFile)
+          if verbose then
+            printfn "%s used for css" (Path.GetFileName cssFile)
           File.Copy(cssFile, dest + Path.GetFileName cssFile, true)
         | None ->
           if verbose then
