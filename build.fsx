@@ -2,7 +2,7 @@
 #r "./packages/FAKE/tools/FakeLib.dll"
 
 open Fake
-
+open System.IO
 // Directories
 let buildDir  = "./build/"
 let deployDir = "./deploy/"
@@ -23,6 +23,7 @@ Target "Clean" (fun _ ->
 
 Target "Build" (fun _ ->
     // compile all projects below src/app/
+
     MSBuildDebug buildDir "Build" appReferences
         |> Log "AppBuild-Output: "
 )

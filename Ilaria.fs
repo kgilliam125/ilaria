@@ -1,31 +1,31 @@
 // A small command line utility to transform markdown to html
-module ilaria
+module Ilaria
 
 open System.IO
 open FSharp.Markdown
 
 // Just going to do single file or single directory for now
 type CommandLineOptions = {
-  sourceDir: string;
-  destinationDir: string
-  verbose: bool
-  generate_toc: bool
-  display_help: bool
-  css: string
+  SourceDir: string;
+  DestinationDir: string
+  Verbose: bool
+  GenerateToc: bool
+  DisplayHelp: bool
+  CssFile: string
 }
 
 let defaultOptions = {
-  sourceDir = "."
-  destinationDir = "."
-  verbose = false
-  generate_toc = false
-  display_help = false
-  css = ""
+  SourceDir = "."
+  DestinationDir = "."
+  Verbose = false
+  GenerateToc = false
+  DisplayHelp = false
+  CssFile = ""
 }
 
 let helpText = "
 usage: Ilaria [--help] [-sourceDir <path>] [-destinationDir <path>] [-toc]
-              [-verbose]
+              [-verbose] [-css <file>]
 
 -sourceDir , -s        Set the source directory for input Markdown fies
 
@@ -35,7 +35,9 @@ usage: Ilaria [--help] [-sourceDir <path>] [-destinationDir <path>] [-toc]
 
 -toc                   Generate a table of contents based on Markdown headers
 
--css                   Use the specified CSS file to format HTML output
+-css                   Use the specified CSS file to format HTML output. The
+                       file will be copied to the directory specified by
+                       -destinationDir
 
 --help , -?            Display this help text for Ilaria
 "
@@ -45,21 +47,21 @@ let rec parseCommandArgsRec args optionsSoFar =
   | [] -> optionsSoFar
 
   | "-?"::xs | "--help"::xs ->
-    let newOptionsSoFar = {optionsSoFar with display_help = true}
+    let newOptionsSoFar = {optionsSoFar with DisplayHelp = true}
     parseCommandArgsRec xs newOptionsSoFar
 
   | "-toc"::xs ->
-    let newOptionsSoFar = {optionsSoFar with generate_toc = true}
+    let newOptionsSoFar = {optionsSoFar with GenerateToc = true}
     parseCommandArgsRec xs newOptionsSoFar
 
   | "-verbose"::xs | "-v"::xs ->
-    let newOptionsSoFar = {optionsSoFar with verbose = true}
+    let newOptionsSoFar = {optionsSoFar with Verbose = true}
     parseCommandArgsRec xs newOptionsSoFar
 
   | "-css"::xs ->
     match xs with
       | s::xss ->
-        let newOptionsSoFar = {optionsSoFar with css = s}
+        let newOptionsSoFar = {optionsSoFar with CssFile = s}
         parseCommandArgsRec xss newOptionsSoFar
       | _ ->
         eprintfn "Must specify a file"
@@ -68,7 +70,7 @@ let rec parseCommandArgsRec args optionsSoFar =
   | "-sourceDir"::xs | "-s"::xs ->
     match xs with
     | s::xss ->
-      let newOptionsSoFar = {optionsSoFar with sourceDir = s}
+      let newOptionsSoFar = {optionsSoFar with SourceDir = s}
       parseCommandArgsRec xss newOptionsSoFar
     | _ ->
       eprintfn "Must have a directory"
@@ -77,7 +79,7 @@ let rec parseCommandArgsRec args optionsSoFar =
   | "-destinationDir"::xs | "-d"::xs ->
       match xs with
       | s::xss ->
-        let newOptionsSoFar = {optionsSoFar with destinationDir = s}
+        let newOptionsSoFar = {optionsSoFar with DestinationDir = s}
         parseCommandArgsRec xss newOptionsSoFar
       | _ ->
         eprintfn "Must have a directory"
@@ -90,43 +92,67 @@ let rec parseCommandArgsRec args optionsSoFar =
 let parseCommandArgs args =
   parseCommandArgsRec args defaultOptions
 
-let css_start = "<link rel=\"stylesheet\" href=\"{0}\">
-  <style>
-      .markdown-body {
-          box-sizing: border-box;
-          min-width: 200px;
-          max-width: 980px;
-          margin: 0 auto;
-          padding: 45px;
-      }
-  </style>
+let css_start = "
+  <link rel=\"stylesheet\" href=\"{0}\">
+    <style>
+        .markdown-body {{
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }}
+      </style>
   <article class=\"markdown-body\">"
+
 let css_end = "</article>"
 
-let createCssHead css_file =
-  System.String.Format(css_start, css_file)
+let createCssWrapper cssFile =
+    if File.Exists(cssFile) then
+      Some ( System.String.Format(css_start, cssFile) , css_end)
+    else
+      None
+
 
 [<EntryPoint>]
 let main argv =
     let argRecord = parseCommandArgs (Seq.toList argv)
-    let source = argRecord.sourceDir
-    let dest = argRecord.destinationDir
-    let verbose = argRecord.verbose
+    let source = argRecord.SourceDir
+    let dest = argRecord.DestinationDir
+    let verbose = argRecord.Verbose
+    let cssFile = argRecord.CssFile
+    let showHelp = argRecord.DisplayHelp
     let filesToConvert = Directory.GetFiles(source, "*.md")
+    let cssWrapper = createCssWrapper cssFile
 
-    if argRecord.display_help then
+    if showHelp then
       printfn "%s" helpText
 
     else
+      match cssWrapper with
+        | Some (a, b) ->
+          printfn "%s used for css" (Path.GetFileName cssFile)
+          File.Copy(cssFile, dest + Path.GetFileName cssFile, true)
+        | None ->
+          if verbose then
+            eprintfn "No CSS will be used either because none was specified or
+the specified file did not exist."
+          else ()
 
       for f in filesToConvert do
         let newFileName = dest + Path.GetFileNameWithoutExtension f + ".html"
         let markdownText = File.ReadAllText f
         let transformedHtml = Markdown.TransformHtml markdownText
+        let createFormattedHtml css =
+          match css with
+            | None ->
+              transformedHtml
+            | Some (a, b) ->
+              a + transformedHtml + b
 
         if verbose then
           printfn "creating file %s from %s" newFileName f
 
-          File.WriteAllText(newFileName, transformedHtml)
+        File.WriteAllText(newFileName, createFormattedHtml cssWrapper)
 
     0 // return an integer exit code
