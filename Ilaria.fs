@@ -3,24 +3,25 @@ module Ilaria
 
 open System.IO
 open FSharp.Markdown
+open System
 
 // Just going to do single file or single directory for now
 type CommandLineOptions = {
-  SourceDir: string;
-  DestinationDir: string
-  Verbose: bool
-  GenerateToc: bool
-  DisplayHelp: bool
   CssFile: string
+  DestinationDir: string
+  DisplayHelp: bool
+  GenerateToc: bool
+  SourceDir: string;
+  Verbose: bool
 }
 
 let defaultOptions = {
-  SourceDir = "."
-  DestinationDir = "."
-  Verbose = false
-  GenerateToc = false
-  DisplayHelp = false
   CssFile = "ilaria.css"
+  DestinationDir = "default"
+  DisplayHelp = false
+  GenerateToc = false
+  SourceDir = "default"
+  Verbose = false
 }
 
 let helpText = "
@@ -113,7 +114,6 @@ let createCssWrapper cssFile =
     else
       None
 
-
 [<EntryPoint>]
 let main argv =
     let argRecord = parseCommandArgs (Seq.toList argv)
@@ -122,17 +122,21 @@ let main argv =
     let verbose = argRecord.Verbose
     let cssFile = argRecord.CssFile
     let showHelp = argRecord.DisplayHelp
-    let filesToConvert = Directory.GetFiles(source, "*.md")
-    let cssWrapper = createCssWrapper cssFile
 
     if showHelp then
       printfn "%s" helpText
 
     else
+      let logContents = ""
+      let filesToConvert = Directory.GetFiles(source, "*.md")
+      let cssWrapper = createCssWrapper cssFile
+
       match cssWrapper with
         | Some (a, b) ->
+          let logMessage = String.Format("{0} used for style sheet", (Path.GetFileName cssFile))
           if verbose then
-            printfn "%s used for css" (Path.GetFileName cssFile)
+            printfn "%s" logMessage
+
           File.Copy(cssFile, dest + Path.GetFileName cssFile, true)
         | None ->
           if verbose then

@@ -14,7 +14,7 @@ let appReferences  =
       ++ "/**/*.fsproj"
 
 // version info
-let version = "0.1"  // or retrieve from CI server
+let version = "0.2"  // or retrieve from CI server
 
 // Targets
 Target "Clean" (fun _ ->
@@ -24,7 +24,7 @@ Target "Clean" (fun _ ->
 Target "Build" (fun _ ->
     // Because Fake's Copy helpers are dumb
     File.Copy("res/ilaria.css","build/ilaria.css", true)
-    
+
     // compile all projects below src/app/
     MSBuildDebug buildDir "Build" appReferences
         |> Log "AppBuild-Output: "
