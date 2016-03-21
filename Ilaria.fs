@@ -5,7 +5,7 @@ open System.IO
 open FSharp.Markdown
 open System
 
-// Just going to do single file or single directory for now
+// Only doing all files in a directory for now. Really should add single file.
 type CommandLineOptions = {
   CssFile: string
   DestinationDir: string
