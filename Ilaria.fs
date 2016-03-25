@@ -11,7 +11,8 @@ type CommandLineOptions = {
   DestinationDir: string
   DisplayHelp: bool
   GenerateToc: bool
-  SourceDir: string;
+  SourceDir: string
+  ResourceDir: string
   Verbose: bool
 }
 
@@ -21,12 +22,13 @@ let defaultOptions = {
   DisplayHelp = false
   GenerateToc = false
   SourceDir = "default"
+  ResourceDir = ""
   Verbose = false
 }
 
 let helpText = "
 usage: Ilaria [--help] [-sourceDir <path>] [-destinationDir <path>] [-toc]
-              [-verbose] [-css <file>]
+              [-verbose] [-css <file>] [-resourceDir <path>]
 
 -sourceDir , -s        Set the source directory for input Markdown fies
 
@@ -86,6 +88,15 @@ let rec parseCommandArgsRec args optionsSoFar =
         eprintfn "Must have a directory"
         parseCommandArgsRec xs optionsSoFar
 
+  | "-resourceDir"::xs | "-s"::xs ->
+        match xs with
+        | s::xss ->
+          let newOptionsSoFar = {optionsSoFar with ResourceDir = s}
+          parseCommandArgsRec xss newOptionsSoFar
+        | _ ->
+          eprintfn "Must have a directory"
+          parseCommandArgsRec xs optionsSoFar
+
     | x::xs ->
         eprintfn "Unrecognized options"
         parseCommandArgsRec xs optionsSoFar
@@ -119,6 +130,7 @@ let main argv =
     let argRecord = parseCommandArgs (Seq.toList argv)
     let source = argRecord.SourceDir
     let dest = argRecord.DestinationDir
+    let res = argRecord.ResourceDir
     let verbose = argRecord.Verbose
     let cssFile = argRecord.CssFile
     let showHelp = argRecord.DisplayHelp
@@ -129,8 +141,10 @@ let main argv =
     else
       let logContents = ""
       let filesToConvert = Directory.GetFiles(source, "*.md")
+      let resourceFiles = Directory.GetFiles(res, "*.*")
       let cssWrapper = createCssWrapper cssFile
 
+      // copy CSS to destination if using one
       match cssWrapper with
         | Some (a, b) ->
           let logMessage = String.Format("{0} used for style sheet", (Path.GetFileName cssFile))
@@ -144,6 +158,7 @@ let main argv =
 the specified file did not exist."
           else ()
 
+      // convert Markdown and copy to destination
       for f in filesToConvert do
         let newFileName = dest + Path.GetFileNameWithoutExtension f + ".html"
         let markdownText = File.ReadAllText f
@@ -159,5 +174,11 @@ the specified file did not exist."
           printfn "creating file %s from %s" newFileName f
 
         File.WriteAllText(newFileName, createFormattedHtml cssWrapper)
+
+      // copy resources to destination. Need to be a little smarter about this
+      // rather than copy all files in the directory
+      for f in resourceFiles do
+        File.Copy(f, dest + Path.GetFileName f, true)
+
 
     0 // return an integer exit code
