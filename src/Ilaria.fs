@@ -8,46 +8,6 @@ open FSharp.Markdown
 
 open CommandLineOptions
 
-// Only doing all files in a directory for now. Really should add single file.
-type CommandLineOptions = {
-  CssFile: string
-  DestinationDir: string
-  DisplayHelp: bool
-  GenerateToc: bool
-  SourceDir: string
-  ResourceDir: string
-  Verbose: bool
-}
-
-let defaultOptions = {
-  CssFile = "ilaria.css"
-  DestinationDir = "default"
-  DisplayHelp = false
-  GenerateToc = false
-  SourceDir = "default"
-  ResourceDir = ""
-  Verbose = false
-}
-
-let helpText = "
-usage: Ilaria [--help] [-sourceDir <path>] [-destinationDir <path>] [-toc]
-              [-verbose] [-css <file>] [-resourceDir <path>]
-
--sourceDir , -s        Set the source directory for input Markdown fies
-
--destinationDir , -d   Set the destination directory for output HTML files
-
--verbose , -v          Print detailed information to terminal
-
--toc                   Generate a table of contents based on Markdown headers
-
--css                   Use the specified CSS file to format HTML output. The
-                       file will be copied to the directory specified by
-                       -destinationDir
-
---help , -?            Display this help text for Ilaria
-"
-
 let rec parseCommandArgsRec args optionsSoFar =
   match args with
   | [] -> optionsSoFar
@@ -124,7 +84,7 @@ let css_end = "</article>"
 
 let createCssWrapper cssFile =
     if File.Exists(cssFile) then
-      Some ( System.String.Format(css_start, cssFile) , css_end)
+      Some ( System.String.Format(css_start, Path.GetFileName cssFile) , css_end)
     else
       None
 
@@ -150,11 +110,14 @@ let main argv =
       // copy CSS to destination if using one
       match cssWrapper with
         | Some (a, b) ->
-          let logMessage = String.Format("{0} used for style sheet", (Path.GetFileName cssFile))
+          let cssFileName = Path.GetFileName cssFile
+          let logMessage = String.Format("{0} used for style sheet", cssFileName)
+          let copyCssFileMessage = String.Format("Copying "{0} to {1}", cssFile, dest + cssFileName)
+          printfn "%s" logMessage
           if verbose then
-            printfn "%s" logMessage
+            printfn "%s" copyCssFileMessage
 
-          File.Copy(cssFile, dest + Path.GetFileName cssFile, true)
+          File.Copy(cssFile, dest + cssFileName, true)
         | None ->
           if verbose then
             eprintfn "No CSS will be used either because none was specified or
