@@ -22,7 +22,7 @@ Target "Clean" (fun _ ->
 )
 
 Target "Build" (fun _ ->
-    // Because Fake's Copy helpers are dumb
+    // Because Fake's Copy helpers aren't working
     File.Copy("res/ilaria.css","build/ilaria.css", true)
 
     // compile all projects below src/app/
