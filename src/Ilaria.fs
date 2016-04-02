@@ -1,9 +1,12 @@
 // A small command line utility to transform markdown to html
 module Ilaria
 
-open System.IO
-open FSharp.Markdown
 open System
+open System.IO
+
+open FSharp.Markdown
+
+open CommandLineOptions
 
 // Only doing all files in a directory for now. Really should add single file.
 type CommandLineOptions = {

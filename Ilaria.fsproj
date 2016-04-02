@@ -47,6 +47,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src/CommandLineOptions.fs" />
     <Compile Include="src/Ilaria.fs" />
     <None Include="App.config" />
   </ItemGroup>
